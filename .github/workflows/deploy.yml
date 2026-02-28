@@ -11,6 +11,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install lftp
+        run: sudo apt-get install -y lftp
+
       - name: Upload files via FTP
         run: |
           lftp -u "${{ secrets.SFTP_USERNAME }},${{ secrets.SFTP_PASSWORD }}" -p ${{ secrets.SFTP_PORT }} ${{ secrets.SFTP_HOST }} <<EOF
