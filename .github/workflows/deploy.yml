@@ -19,6 +19,8 @@ jobs:
           lftp -u "${{ secrets.SFTP_USERNAME }},${{ secrets.SFTP_PASSWORD }}" -p ${{ secrets.SFTP_PORT }} ${{ secrets.SFTP_HOST }} <<EOF
           set ftp:ssl-allow no
           cd ${{ secrets.SFTP_REMOTE_PATH }}
+          mkdir -p kobolds
+          cd kobolds
           put kobolds.html
           put monsters.js
           put .htaccess

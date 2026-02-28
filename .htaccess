@@ -1,2 +1,1 @@
-RewriteEngine On
-RewriteRule ^kobolds$ /kobolds.html [L,R=301]
+DirectoryIndex kobolds.html
