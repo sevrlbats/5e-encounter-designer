@@ -1267,6 +1267,12 @@
             border: 2px solid var(--border-dark);
             border-radius: 4px;
             background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.85rem;
+            color: var(--ink-dark);
         }
         .hp-tracker {
             display: flex;
@@ -1294,6 +1300,42 @@
             font-size: 0.65rem;
             color: var(--ink-light);
             margin-bottom: 2px;
+        }
+
+        /* Encounter Summary Sheet */
+        .summary-sheet {
+            page-break-after: always;
+            margin-bottom: 30px;
+        }
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75rem;
+            margin-top: 12px;
+        }
+        .summary-table th {
+            background: var(--ink-dark);
+            color: var(--parchment);
+            padding: 6px 8px;
+            text-align: left;
+            font-variant: small-caps;
+            font-size: 0.7rem;
+            letter-spacing: 0.5px;
+        }
+        .summary-table td {
+            padding: 5px 8px;
+            border-bottom: 1px solid #ccc;
+            vertical-align: top;
+        }
+        .summary-table tr:nth-child(even) td {
+            background: #f9f5eb;
+        }
+        .summary-table .num-col {
+            text-align: center;
+        }
+        .summary-attacks {
+            font-size: 0.68rem;
+            color: var(--ink-light);
         }
 
         /* Encounter warnings */
@@ -1392,6 +1434,7 @@
     </div>
     <div class="header-buttons">
         <button class="header-btn" onclick="showPrintPreview()">&#128424; Print</button>
+        <button class="header-btn" onclick="showSummarySheet()">&#128203; Summary</button>
         <button class="header-btn" onclick="openSettingsModal()">&#9881; Settings</button>
         <button class="header-btn" onclick="openAboutModal()">&#9432; About</button>
     </div>
@@ -1609,6 +1652,20 @@
                 <span class="toggle-slider"></span>
             </label>
         </div>
+        <div class="setting-row">
+            <span class="setting-label">Preroll Initiative</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="prerollInitToggle" onchange="togglePrerollInit(this.checked)">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <div class="setting-row">
+            <span class="setting-label">Print Summary Sheet with Cards</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="printSummaryToggle" onchange="togglePrintSummary(this.checked)">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
         <button class="small-modal-close" onclick="closeSettingsModal()">Close</button>
     </div>
 </div>
@@ -1775,12 +1832,12 @@ let currentDifficulty = 'moderate';
 
 // ===== SETTINGS =====
 const SETTINGS_STORAGE_KEY = '2d6kobolds_settings';
-let appSettings = { bwPrint: false };
+let appSettings = { bwPrint: false, prerollInitiative: false, printSummarySheet: true };
 
 function loadSettings() {
     try {
         const saved = localStorage.getItem(SETTINGS_STORAGE_KEY);
-        if (saved) appSettings = JSON.parse(saved);
+        if (saved) appSettings = Object.assign(appSettings, JSON.parse(saved));
     } catch (e) {}
     applySettings();
 }
@@ -1794,11 +1851,27 @@ function applySettings() {
     document.body.classList.toggle('bw-print', appSettings.bwPrint);
     const toggle = document.getElementById('bwPrintToggle');
     if (toggle) toggle.checked = appSettings.bwPrint;
+    // Preroll Initiative
+    const prerollToggle = document.getElementById('prerollInitToggle');
+    if (prerollToggle) prerollToggle.checked = !!appSettings.prerollInitiative;
+    // Print Summary Sheet
+    const summaryToggle = document.getElementById('printSummaryToggle');
+    if (summaryToggle) summaryToggle.checked = appSettings.printSummarySheet !== false;
 }
 
 function toggleBWPrint(enabled) {
     appSettings.bwPrint = enabled;
     document.body.classList.toggle('bw-print', enabled);
+    saveSettings();
+}
+
+function togglePrerollInit(enabled) {
+    appSettings.prerollInitiative = enabled;
+    saveSettings();
+}
+
+function togglePrintSummary(enabled) {
+    appSettings.printSummarySheet = enabled;
     saveSettings();
 }
 
@@ -2560,6 +2633,8 @@ function showPrintPreview() {
         }
     }
 
+    const summaryHtml = appSettings.printSummarySheet ? renderSummarySheet() : '';
+
     content.innerHTML = `
         <div style="text-align:center; margin: 20px 0;">
             <h2 style="font-variant: small-caps; color: var(--accent-red);">Initiative Tracker Cards</h2>
@@ -2573,6 +2648,7 @@ function showPrintPreview() {
                 Print / Save as PDF
             </button>
         </div>
+        ${summaryHtml}
         <div class="cards-grid">${cards.join('')}</div>
     `;
 
@@ -2581,6 +2657,120 @@ function showPrintPreview() {
 
 function closePrintPreview() {
     document.getElementById('printArea').classList.remove('visible');
+}
+
+function renderSummarySheet() {
+    const partySize = document.getElementById('partySize').value;
+    const partyLevel = document.getElementById('partyLevel').value;
+
+    // Build summary rows — one per unique monster
+    let rows = '';
+    for (const entry of encounter) {
+        const m = entry.monster;
+        const initBonus = m.initiative != null ? m.initiative : Math.floor(((m.dex || 10) - 10) / 2);
+        const initStr = initBonus >= 0 ? '+' + initBonus : '' + initBonus;
+
+        // Best attack summary
+        let mainAttack = '—';
+        if (m.actions && m.actions.length > 0) {
+            // Find the first attack action (skip Multiattack)
+            const atkAction = m.actions.find(a => a.description && /Attack Roll|Hit:/i.test(a.description) && !/multiattack/i.test(a.name));
+            if (atkAction) {
+                const hitMatch = atkAction.description.match(/Hit:\s*(\d+)\s*\(([^)]+)\)/);
+                const atkMatch = atkAction.description.match(/[+](\d+)/);
+                if (hitMatch) {
+                    mainAttack = `${atkAction.name}: +${atkMatch ? atkMatch[1] : '?'}, ${hitMatch[1]} (${hitMatch[2]})`;
+                } else {
+                    mainAttack = atkAction.name;
+                }
+            }
+        }
+
+        // Key saves (highest)
+        const saves = ['str','dex','con','int','wis','cha'];
+        const highSaves = saves
+            .map(s => ({name: s.toUpperCase(), mod: Math.floor(((m[s]||10) - 10)/2)}))
+            .filter(s => s.mod >= 2)
+            .sort((a,b) => b.mod - a.mod)
+            .slice(0, 3)
+            .map(s => `${s.name} ${s.mod >= 0 ? '+' : ''}${s.mod}`)
+            .join(', ') || '—';
+
+        // Special abilities summary (just names)
+        const specials = [
+            ...(m.traits||[]).map(t => t.name),
+            ...(m.bonusActions||[]).map(b => '(B) ' + b.name),
+            ...(m.reactions||[]).map(r => '(R) ' + r.name),
+        ].filter(n => !/^Amphibious$/i.test(n)).join(', ') || '—';
+
+        // Resistances/immunities
+        let defenses = [];
+        if (m.resistances) defenses.push('Resist: ' + m.resistances);
+        if (m.immunities) defenses.push('Immune: ' + m.immunities);
+        const defStr = defenses.join('; ') || '—';
+
+        rows += `<tr>
+            <td><strong>${m.name}</strong></td>
+            <td class="num-col">${entry.count}</td>
+            <td class="num-col">CR ${m.cr}</td>
+            <td class="num-col">${m.ac}</td>
+            <td class="num-col">${m.hp}</td>
+            <td class="num-col">${initStr}</td>
+            <td class="summary-attacks">${mainAttack}</td>
+            <td class="summary-attacks">${highSaves}</td>
+            <td class="summary-attacks" style="font-size:0.62rem;">${defStr}</td>
+            <td class="summary-attacks" style="font-size:0.62rem;">${specials}</td>
+        </tr>`;
+    }
+
+    const totalXP = encounter.reduce((sum, e) => sum + (e.monster.xp || 0) * e.count, 0);
+    const totalCreatures = encounter.reduce((sum, e) => sum + e.count, 0);
+
+    return `<div class="summary-sheet">
+        <h2 style="font-variant: small-caps; color: var(--accent-red); text-align: center; margin-bottom: 2px;">Encounter Summary</h2>
+        <p style="color: var(--ink-light); font-size: 0.8rem; text-align: center; margin: 0 0 8px;">
+            Party: ${partySize} players, Level ${partyLevel}
+            | ${totalCreatures} creatures | ${totalXP} XP
+        </p>
+        <table class="summary-table">
+            <thead>
+                <tr>
+                    <th>Monster</th>
+                    <th>Qty</th>
+                    <th>CR</th>
+                    <th>AC</th>
+                    <th>HP</th>
+                    <th>Init</th>
+                    <th>Main Attack</th>
+                    <th>Strong Saves</th>
+                    <th>Defenses</th>
+                    <th>Key Abilities</th>
+                </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+        </table>
+    </div>`;
+}
+
+function showSummarySheet() {
+    if (encounter.length === 0) {
+        alert('Add some monsters to your encounter first!');
+        return;
+    }
+
+    const printArea = document.getElementById('printArea');
+    const content = document.getElementById('printContent');
+
+    content.innerHTML = `
+        <div style="text-align:center; margin: 20px 0;">
+            <button onclick="window.print()" style="margin: 10px; padding: 10px 24px; background: var(--accent-red); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; font-weight: bold;">
+                Print / Save as PDF
+            </button>
+        </div>
+        ${renderSummarySheet()}
+    `;
+
+    printArea.classList.add('visible');
 }
 
 // ===== PRINT SUMMARY ENGINE =====
@@ -2751,6 +2941,12 @@ function summarizeForPrint(desc, monsterName) {
     return s;
 }
 
+function rollInitiative(m) {
+    const bonus = m.initiative != null ? m.initiative : Math.floor(((m.dex || 10) - 10) / 2);
+    const roll = Math.floor(Math.random() * 20) + 1 + bonus;
+    return roll;
+}
+
 function renderInitCard(m, num, total) {
     const abilities = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
     const nameLabel = total > 1 ? `${m.name} #${num}` : m.name;
@@ -2820,7 +3016,7 @@ function renderInitCard(m, num, total) {
             <div class="init-card-footer">
                 <div class="init-track">
                     <span class="init-label">Init</span>
-                    <div class="init-box"></div>
+                    <div class="init-box">${appSettings.prerollInitiative ? rollInitiative(m) : ''}</div>
                 </div>
                 <div class="hp-tracker">
                     <span class="hp-label">HP</span>
