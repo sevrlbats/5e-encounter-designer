@@ -51,20 +51,18 @@
             font-size: 0.85rem;
             font-style: italic;
         }
-        .promo-bar {
-            background: var(--ink);
-            text-align: center;
-            padding: 4px 0;
-            font-size: 0.75rem;
-        }
-        .promo-bar a {
+        .header-promo {
             color: var(--accent-gold);
             text-decoration: none;
+            font-size: 0.75rem;
             font-style: italic;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+            white-space: nowrap;
         }
-        .promo-bar a:hover {
+        .header-promo:hover {
+            opacity: 1;
             color: var(--parchment);
-            text-decoration: underline;
         }
         .header-buttons {
             margin-left: auto;
@@ -1732,6 +1730,7 @@
         <h1>2d6 Kobolds</h1>
         <div class="subtitle">5e Encounter Designer & Initiative Card Printer</div>
     </div>
+    <a class="header-promo" href="https://dragonizer.net/dragonizer/" target="_blank">Try Dragonizer, the homebrew 5e character creator! &#8594;</a>
     <div class="header-buttons">
         <button class="header-btn header-btn-homebrew" onclick="openHomebrewManager()">&#9878; Homebrew</button>
         <button class="header-btn" onclick="showPrintPreview()">&#128424; Print</button>
@@ -1741,10 +1740,6 @@
         <button class="header-btn" onclick="openAboutModal()">&#9432; About</button>
     </div>
 </header>
-
-<div class="promo-bar">
-    <a href="https://dragonizer.net/dragonizer/" target="_blank">Try Dragonizer, the homebrew 5e character creator! &#8594;</a>
-</div>
 
 <div class="app-container">
     <!-- LEFT PANEL: Party Configuration & Encounter -->
