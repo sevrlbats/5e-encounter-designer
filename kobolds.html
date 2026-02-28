@@ -292,13 +292,26 @@
             font-size: 0.75rem;
             color: var(--ink-light);
         }
-        .encounter-monster-name {
+        .encounter-monster-info {
             cursor: pointer;
             transition: color 0.15s;
         }
-        .encounter-monster-name:hover {
+        .encounter-monster-info:hover {
             color: var(--accent-red);
+        }
+        .encounter-monster-info:hover .encounter-monster-name {
             text-decoration: underline;
+        }
+        .edit-encounter-monster {
+            color: var(--accent-gold);
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 0.85rem;
+            padding: 0 3px;
+        }
+        .edit-encounter-monster:hover {
+            color: var(--ink);
         }
         .remove-monster {
             color: var(--accent-red);
@@ -1295,6 +1308,30 @@
         }
         .print-close-btn:hover { background: #a02020; }
 
+        /* Toast Notification */
+        .toast-notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: var(--ink);
+            color: var(--parchment);
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: bold;
+            z-index: 2000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: transform 0.3s ease;
+            pointer-events: none;
+            text-align: center;
+            max-width: 400px;
+        }
+        .toast-notification.visible {
+            transform: translateX(-50%) translateY(0);
+        }
+
         /* Print Paper Container */
         .print-paper {
             background: white;
@@ -1480,7 +1517,7 @@
             justify-content: center;
             font-weight: bold;
             font-size: 0.85rem;
-            color: var(--ink-dark);
+            color: var(--ink);
         }
         .hp-tracker {
             display: flex;
@@ -1522,7 +1559,7 @@
             margin-top: 12px;
         }
         .summary-table th {
-            background: var(--ink-dark);
+            background: var(--ink);
             color: var(--parchment);
             padding: 6px 8px;
             text-align: left;
@@ -1875,6 +1912,13 @@
                 <span class="toggle-slider"></span>
             </label>
         </div>
+        <div class="setting-row">
+            <span class="setting-label">Clear Encounter on Save</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="clearOnSaveToggle" onchange="toggleClearOnSave(this.checked)">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
         <button class="small-modal-close" onclick="closeSettingsModal()">Close</button>
     </div>
 </div>
@@ -2050,7 +2094,7 @@ let currentDifficulty = 'moderate';
 
 // ===== SETTINGS =====
 const SETTINGS_STORAGE_KEY = '2d6kobolds_settings';
-let appSettings = { bwPrint: true, prerollInitiative: false, printSummarySheet: true };
+let appSettings = { bwPrint: true, prerollInitiative: false, printSummarySheet: true, clearOnSave: true };
 
 function loadSettings() {
     try {
@@ -2075,6 +2119,9 @@ function applySettings() {
     // Print Summary Sheet
     const summaryToggle = document.getElementById('printSummaryToggle');
     if (summaryToggle) summaryToggle.checked = appSettings.printSummarySheet !== false;
+    // Clear Encounter on Save
+    const clearOnSaveToggle = document.getElementById('clearOnSaveToggle');
+    if (clearOnSaveToggle) clearOnSaveToggle.checked = appSettings.clearOnSave !== false;
 }
 
 function toggleBWPrint(enabled) {
@@ -2090,6 +2137,11 @@ function togglePrerollInit(enabled) {
 
 function togglePrintSummary(enabled) {
     appSettings.printSummarySheet = enabled;
+    saveSettings();
+}
+
+function toggleClearOnSave(enabled) {
+    appSettings.clearOnSave = enabled;
     saveSettings();
 }
 
@@ -2113,6 +2165,7 @@ function closeAboutModal() {
 const HOMEBREW_STORAGE_KEY = '2d6kobolds_homebrew_monsters';
 let homebrewMonsters = [];
 let editingHomebrewIndex = -1; // -1 = creating new, >=0 = editing existing
+let replacingEncounterIndex = -1; // -1 = not replacing, >=0 = replace encounter entry at this index on save
 
 function escapeHtml(text) {
     if (!text) return '';
@@ -2262,6 +2315,7 @@ function openHomebrewEditor(prefillMonster, editIndex) {
 function closeHomebrewEditor() {
     document.getElementById('hbModalOverlay').classList.remove('active');
     editingHomebrewIndex = -1;
+    replacingEncounterIndex = -1;
 }
 
 function autoFillXP() {
@@ -2333,7 +2387,23 @@ function saveHomebrewMonster() {
 
     saveHomebrewToStorage();
     mergeHomebrewIntoAllMonsters();
+
+    // Capture before closeHomebrewEditor resets it
+    const replaceIndex = replacingEncounterIndex;
     closeHomebrewEditor();
+
+    // If we were editing an encounter monster, replace it in the encounter
+    if (replaceIndex >= 0 && replaceIndex < encounter.length) {
+        const count = encounter[replaceIndex].count;
+        // Find the newly saved monster in allMonsters (it's been merged)
+        const newMonster = allMonsters.find(m => m.name === monster.name && m.isHomebrew);
+        if (newMonster) {
+            encounter[replaceIndex] = { monster: newMonster, count };
+            renderEncounterList();
+            recalcBudget();
+            saveEncounterToStorage();
+        }
+    }
 
     // Show the saved monster in the stat block
     selectedMonster = monster;
@@ -2663,6 +2733,15 @@ function viewEncounterMonster(index) {
     renderStatBlock(selectedMonster);
 }
 
+function editEncounterMonster(index) {
+    const monster = encounter[index].monster;
+    replacingEncounterIndex = index;
+    // Open homebrew editor as a new monster, pre-filled with a clone of the existing one
+    openHomebrewEditor(monster, -1);
+    // Set title to indicate editing for encounter
+    document.getElementById('hbModalTitle').textContent = 'Edit Encounter Monster';
+}
+
 function cloneMonster() {
     if (!selectedMonster) return;
     openHomebrewEditor(selectedMonster);
@@ -2904,6 +2983,14 @@ function closeSessionManager() {
     document.getElementById('sessionModalOverlay').classList.remove('active');
 }
 
+function showToast(message, duration) {
+    duration = duration || 2500;
+    const toast = document.getElementById('toastNotification');
+    toast.textContent = message;
+    toast.classList.add('visible');
+    setTimeout(() => toast.classList.remove('visible'), duration);
+}
+
 function toggleSessionGroup(sessionId) {
     const body = document.getElementById('sgBody_' + sessionId);
     body.style.display = body.style.display === 'none' ? 'block' : 'none';
@@ -2928,11 +3015,21 @@ function deleteSessionFromUI(sessionId) {
 }
 
 function saveCurrentEncounterToUI(sessionId) {
+    if (encounter.length === 0) {
+        alert('Add some monsters to your encounter first!');
+        return;
+    }
     const input = document.getElementById('encName_' + sessionId);
-    const name = input.value.trim() || 'Unnamed Encounter';
-    saveEncounterToSession(sessionId, name);
-    input.value = '';
-    renderSessionManager();
+    const encName = input.value.trim() || 'Unnamed Encounter';
+    const data = loadSessionsData();
+    const session = data.sessions.find(s => s.id === sessionId);
+    const sessionName = session ? session.name : 'session';
+    saveEncounterToSession(sessionId, encName);
+    closeSessionManager();
+    showToast(`"${encName}" saved to ${sessionName}!`);
+    if (appSettings.clearOnSave !== false) {
+        clearEncounter();
+    }
 }
 
 function deleteEncounterFromUI(sessionId, encounterId) {
@@ -3062,14 +3159,15 @@ function renderEncounterList() {
         const xp = (entry.monster.xp || 0) * entry.count;
         return `
             <li>
-                <span>
-                    <strong class="encounter-monster-name" onclick="viewEncounterMonster(${i})">${entry.monster.name}${entry.monster.isHomebrew ? ' <span class="hb-badge">HB</span>' : ''}</strong>
+                <span class="encounter-monster-info" onclick="viewEncounterMonster(${i})">
+                    <strong class="encounter-monster-name">${entry.monster.name}${entry.monster.isHomebrew ? ' <span class="hb-badge">HB</span>' : ''}</strong>
                     <span class="monster-xp-cost">(CR ${entry.monster.cr}, ${xp.toLocaleString()} XP)</span>
                 </span>
                 <span class="monster-count-controls">
                     <button onclick="adjustCount(${i}, -1)">-</button>
                     <span class="count">${entry.count}</span>
                     <button onclick="adjustCount(${i}, 1)">+</button>
+                    <button class="edit-encounter-monster" onclick="editEncounterMonster(${i})" title="Edit">&#9998;</button>
                     <button class="remove-monster" onclick="removeFromEncounter(${i})" title="Remove">&times;</button>
                 </span>
             </li>`;
@@ -3511,6 +3609,9 @@ document.addEventListener('keydown', (e) => {
     }
 });
 </script>
+
+<!-- Toast notification -->
+<div class="toast-notification" id="toastNotification"></div>
 
 <!-- Monster data will be loaded from monsters.json or embedded below -->
 <script src="monsters.js"></script>
