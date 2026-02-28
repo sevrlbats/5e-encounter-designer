@@ -51,6 +51,21 @@
             font-size: 0.85rem;
             font-style: italic;
         }
+        .promo-bar {
+            background: var(--ink);
+            text-align: center;
+            padding: 4px 0;
+            font-size: 0.75rem;
+        }
+        .promo-bar a {
+            color: var(--accent-gold);
+            text-decoration: none;
+            font-style: italic;
+        }
+        .promo-bar a:hover {
+            color: var(--parchment);
+            text-decoration: underline;
+        }
         .header-buttons {
             margin-left: auto;
             display: flex;
@@ -114,6 +129,15 @@
             background: linear-gradient(180deg, var(--parchment) 0%, var(--parchment-dark) 100%);
         }
 
+        .config-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .config-row .config-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
         .config-group {
             margin-bottom: 16px;
         }
@@ -608,27 +632,6 @@
             transition: background 0.2s;
         }
         .sb-add-btn:hover { background: #3a7a28; }
-
-        /* ===== TIPS PANEL ===== */
-        .tips-box {
-            background: linear-gradient(135deg, #fffbe6, #f5ebc8);
-            border: 2px solid var(--accent-gold);
-            border-radius: 6px;
-            padding: 10px 12px;
-            margin-top: 12px;
-            font-size: 0.78rem;
-        }
-        .tips-box .tips-title {
-            font-weight: bold;
-            color: var(--accent-gold);
-            font-variant: small-caps;
-            margin-bottom: 4px;
-        }
-        .tips-box ul {
-            padding-left: 16px;
-            color: var(--ink-light);
-        }
-        .tips-box li { margin-bottom: 3px; }
 
         /* ===== HOMEBREW VISUAL DISTINCTION ===== */
         .monster-card.homebrew-card {
@@ -1730,28 +1733,33 @@
         <div class="subtitle">5e Encounter Designer & Initiative Card Printer</div>
     </div>
     <div class="header-buttons">
+        <button class="header-btn header-btn-homebrew" onclick="openHomebrewManager()">&#9878; Homebrew</button>
         <button class="header-btn" onclick="showPrintPreview()">&#128424; Print</button>
         <button class="header-btn" onclick="showSummarySheet()">&#128203; Summary</button>
-        <button class="header-btn" onclick="openSessionManager()">&#128218; Sessions</button>
-        <button class="header-btn header-btn-homebrew" onclick="openHomebrewManager()">&#9878; Homebrew</button>
+        <button class="header-btn" onclick="openSessionManager()">&#128218; Save Session</button>
         <button class="header-btn" onclick="openSettingsModal()">&#9881; Settings</button>
         <button class="header-btn" onclick="openAboutModal()">&#9432; About</button>
     </div>
 </header>
+
+<div class="promo-bar">
+    <a href="https://dragonizer.net/dragonizer/" target="_blank">Try Dragonizer, the homebrew 5e character creator! &#8594;</a>
+</div>
 
 <div class="app-container">
     <!-- LEFT PANEL: Party Configuration & Encounter -->
     <div class="panel party-panel">
         <div class="panel-header">Party Configuration</div>
 
-        <div class="config-group">
-            <label>Number of Players</label>
-            <input type="number" id="partySize" value="4" min="1" max="10" onchange="recalcBudget()">
-        </div>
-
-        <div class="config-group">
-            <label>Party Level</label>
-            <input type="number" id="partyLevel" value="3" min="1" max="20" onchange="recalcBudget()">
+        <div class="config-row">
+            <div class="config-group">
+                <label>Number of Players</label>
+                <input type="number" id="partySize" value="4" min="1" max="10" onchange="recalcBudget()">
+            </div>
+            <div class="config-group">
+                <label>Party Level</label>
+                <input type="number" id="partyLevel" value="3" min="1" max="20" onchange="recalcBudget()">
+            </div>
         </div>
 
         <div class="config-group">
@@ -1811,21 +1819,14 @@
             <button class="clear-encounter-btn" onclick="clearEncounter()">Clear Encounter</button>
         </div>
 
-        <div class="tips-box">
-            <div class="tips-title">DM Tips (SRD 5.2)</div>
-            <ul>
-                <li>A single monster = low difficulty if its CR equals party level</li>
-                <li>Mix monster types for more interesting encounters</li>
-                <li>More than 2 creatures per player? Include fragile ones</li>
-                <li>Watch out for monsters with CR above party level</li>
-                <li>Try to limit stat blocks to 2-3 per encounter</li>
-            </ul>
-        </div>
     </div>
 
     <!-- CENTER PANEL: Monster Browser -->
     <div class="panel monster-panel">
-        <div class="panel-header">Monster Compendium</div>
+        <div class="panel-header-row">
+            <div class="panel-header">Monster Compendium</div>
+            <button class="stat-block-btn add-new-btn" onclick="openHomebrewEditor()">&#10022; Add New</button>
+        </div>
 
         <div class="search-bar">
             <input type="text" id="searchInput" placeholder="Search monsters by name..." oninput="filterMonsters()">
@@ -1920,10 +1921,7 @@
     <div class="panel detail-panel">
         <div class="panel-header-row">
             <div class="panel-header">Stat Block</div>
-            <div style="display:flex;gap:6px;">
-                <button class="stat-block-btn add-new-btn" onclick="openHomebrewEditor()">&#10022; Add New</button>
-                <button class="stat-block-btn clone-btn" id="cloneBtn" onclick="cloneMonster()">Clone</button>
-            </div>
+            <button class="stat-block-btn clone-btn" id="cloneBtn" onclick="cloneMonster()">Clone</button>
         </div>
         <div id="statBlockArea">
             <div class="detail-placeholder">
