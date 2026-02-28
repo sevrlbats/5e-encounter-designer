@@ -52,20 +52,23 @@
             font-style: italic;
         }
         .header-promo {
-            color: var(--accent-gold);
+            flex: 1;
+            text-align: center;
+            color: var(--parchment);
             text-decoration: none;
-            font-size: 0.75rem;
-            font-style: italic;
-            opacity: 0.8;
+            font-size: 0.7rem;
+            opacity: 0.6;
             transition: opacity 0.2s;
             white-space: nowrap;
         }
         .header-promo:hover {
             opacity: 1;
-            color: var(--parchment);
+        }
+        .header-promo strong {
+            color: var(--accent-gold);
         }
         .header-buttons {
-            margin-left: auto;
+            margin-left: 0;
             display: flex;
             gap: 8px;
         }
@@ -1730,7 +1733,7 @@
         <h1>2d6 Kobolds</h1>
         <div class="subtitle">5e Encounter Designer & Initiative Card Printer</div>
     </div>
-    <a class="header-promo" href="https://dragonizer.net/dragonizer/" target="_blank">Try Dragonizer, the homebrew 5e character creator! &#8594;</a>
+    <a class="header-promo" href="https://dragonizer.net/dragonizer/" target="_blank">Try <strong>Dragonizer</strong>, the homebrew 5e character creator! &#8594;</a>
     <div class="header-buttons">
         <button class="header-btn header-btn-homebrew" onclick="openHomebrewManager()">&#9878; Homebrew</button>
         <button class="header-btn" onclick="showPrintPreview()">&#128424; Print</button>
