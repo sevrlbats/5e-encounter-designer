@@ -11,16 +11,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.SFTP_HOST }}
-          username: ${{ secrets.SFTP_USERNAME }}
-          password: ${{ secrets.SFTP_PASSWORD }}
-          port: ${{ secrets.SFTP_PORT }}
-          server-dir: ${{ secrets.SFTP_REMOTE_PATH }}
-          protocol: ftp
-          exclude: |
-            **/.git*
-            **/.git*/**
-          dangerous-clean-slate: false
+      - name: Upload files via FTP
+        run: |
+          lftp -u "${{ secrets.SFTP_USERNAME }},${{ secrets.SFTP_PASSWORD }}" -p ${{ secrets.SFTP_PORT }} ${{ secrets.SFTP_HOST }} <<EOF
+          set ftp:ssl-allow no
+          cd ${{ secrets.SFTP_REMOTE_PATH }}
+          put kobolds.html
+          put monsters.js
+          put .htaccess
+          bye
+          EOF
