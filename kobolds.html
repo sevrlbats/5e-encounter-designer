@@ -74,6 +74,15 @@
             background: var(--accent-gold);
             color: #1a0e08;
         }
+        .header-btn-homebrew {
+            background: #d4700a;
+            color: #fff;
+            border-color: #fff;
+        }
+        .header-btn-homebrew:hover {
+            background: #b85e08;
+            color: #fff;
+        }
 
         /* ===== MAIN LAYOUT ===== */
         .app-container {
@@ -683,21 +692,6 @@
         }
         .btn-save-hb:hover { background: #fdf5e6; }
 
-        /* Homebrew Controls in Left Panel */
-        .homebrew-controls {
-            border-top: 2px solid var(--border-dark);
-            padding-top: 12px;
-            margin-top: 12px;
-        }
-        .homebrew-controls h3 {
-            font-variant: small-caps;
-            font-size: 0.95rem;
-            color: var(--accent-gold);
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
         .homebrew-count-label {
             font-size: 0.75rem;
             color: var(--ink-light);
@@ -726,6 +720,51 @@
             color: #1a0e08;
         }
         .hb-btn-primary:hover { background: #d4a017; }
+
+        /* Homebrew Manager List */
+        .hb-manager-entry {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 8px;
+            border-bottom: 1px solid var(--border-light);
+        }
+        .hb-manager-entry:last-child { border-bottom: none; }
+        .hb-manager-name {
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: var(--ink);
+        }
+        .hb-manager-name:hover { color: var(--accent-gold); }
+        .hb-manager-actions {
+            display: flex;
+            gap: 4px;
+        }
+        .hb-manager-edit, .hb-manager-delete {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 2px 6px;
+            border-radius: 3px;
+            transition: all 0.15s;
+        }
+        .hb-manager-edit {
+            color: var(--accent-gold);
+        }
+        .hb-manager-edit:hover {
+            background: var(--accent-gold);
+            color: #1a0e08;
+        }
+        .hb-manager-delete {
+            color: var(--accent-red);
+            font-size: 1.2rem;
+        }
+        .hb-manager-delete:hover {
+            background: var(--accent-red);
+            color: #fff;
+        }
 
         /* ===== HOMEBREW EDITOR MODAL ===== */
         .hb-modal-overlay {
@@ -921,7 +960,7 @@
             padding-bottom: 0;
             margin-bottom: 0;
         }
-        .clone-btn {
+        .stat-block-btn {
             padding: 4px 12px;
             background: var(--card-bg);
             color: var(--accent-gold);
@@ -934,14 +973,25 @@
             font-weight: bold;
             letter-spacing: 0.5px;
             transition: all 0.2s;
-            display: none;
         }
-        .clone-btn:hover {
+        .stat-block-btn:hover {
             background: var(--accent-gold);
             color: #1a0e08;
         }
+        .clone-btn {
+            display: none;
+        }
         .clone-btn.visible {
             display: inline-block;
+        }
+        .add-new-btn {
+            background: var(--accent-red);
+            color: #d4700a;
+            border-color: #d4700a;
+        }
+        .add-new-btn:hover {
+            background: #d4700a;
+            color: #fff;
         }
 
         /* ===== SETTINGS & ABOUT MODALS ===== */
@@ -1683,6 +1733,7 @@
         <button class="header-btn" onclick="showPrintPreview()">&#128424; Print</button>
         <button class="header-btn" onclick="showSummarySheet()">&#128203; Summary</button>
         <button class="header-btn" onclick="openSessionManager()">&#128218; Sessions</button>
+        <button class="header-btn header-btn-homebrew" onclick="openHomebrewManager()">&#9878; Homebrew</button>
         <button class="header-btn" onclick="openSettingsModal()">&#9881; Settings</button>
         <button class="header-btn" onclick="openAboutModal()">&#9432; About</button>
     </div>
@@ -1758,16 +1809,6 @@
             </div>
 
             <button class="clear-encounter-btn" onclick="clearEncounter()">Clear Encounter</button>
-        </div>
-
-        <!-- Homebrew Controls -->
-        <div class="homebrew-controls">
-            <h3>&#128220; Homebrew Monsters</h3>
-            <div class="homebrew-count-label" id="homebrewCountLabel">0 homebrew monsters</div>
-            <button class="hb-btn hb-btn-primary" onclick="openHomebrewEditor()">Create New Monster</button>
-            <button class="hb-btn" onclick="exportHomebrew()">Export Homebrew (JSON)</button>
-            <button class="hb-btn" onclick="document.getElementById('importFileInput').click()">Import Homebrew (JSON)</button>
-            <input type="file" id="importFileInput" multiple accept=".json" style="display:none;" onchange="importHomebrew(this.files)">
         </div>
 
         <div class="tips-box">
@@ -1879,7 +1920,10 @@
     <div class="panel detail-panel">
         <div class="panel-header-row">
             <div class="panel-header">Stat Block</div>
-            <button class="clone-btn" id="cloneBtn" onclick="cloneMonster()">Clone</button>
+            <div style="display:flex;gap:6px;">
+                <button class="stat-block-btn add-new-btn" onclick="openHomebrewEditor()">&#10022; Add New</button>
+                <button class="stat-block-btn clone-btn" id="cloneBtn" onclick="cloneMonster()">Clone</button>
+            </div>
         </div>
         <div id="statBlockArea">
             <div class="detail-placeholder">
@@ -1943,6 +1987,20 @@
         <h2>&#128218; Session Manager</h2>
         <div id="sessionManagerContent"></div>
         <button class="small-modal-close" onclick="closeSessionManager()">Close</button>
+    </div>
+</div>
+
+<!-- HOMEBREW MANAGER MODAL -->
+<div class="small-modal-overlay" id="homebrewModalOverlay" onclick="if(event.target===this)closeHomebrewManager()">
+    <div class="small-modal">
+        <h2>&#9878; Homebrew Manager</h2>
+        <div class="homebrew-count-label" id="homebrewCountLabel">0 homebrew monsters</div>
+        <button class="hb-btn hb-btn-primary" onclick="closeHomebrewManager();openHomebrewEditor()">Create New Monster</button>
+        <button class="hb-btn" onclick="exportHomebrew()">Export Homebrew (JSON)</button>
+        <button class="hb-btn" onclick="document.getElementById('importFileInput').click()">Import Homebrew (JSON)</button>
+        <input type="file" id="importFileInput" multiple accept=".json" style="display:none;" onchange="importHomebrew(this.files)">
+        <div id="homebrewManagerList" style="margin-top: 12px;"></div>
+        <button class="small-modal-close" onclick="closeHomebrewManager()">Close</button>
     </div>
 </div>
 
@@ -2985,6 +3043,34 @@ function closeSessionManager() {
     document.getElementById('sessionModalOverlay').classList.remove('active');
 }
 
+function openHomebrewManager() {
+    document.getElementById('homebrewModalOverlay').classList.add('active');
+    renderHomebrewManagerList();
+}
+
+function closeHomebrewManager() {
+    document.getElementById('homebrewModalOverlay').classList.remove('active');
+}
+
+function renderHomebrewManagerList() {
+    const container = document.getElementById('homebrewManagerList');
+    if (homebrewMonsters.length === 0) {
+        container.innerHTML = '<div style="text-align:center;color:var(--ink-light);font-style:italic;font-size:0.85rem;padding:8px 0;">No homebrew monsters yet. Create or import some!</div>';
+        return;
+    }
+    let html = '';
+    homebrewMonsters.forEach((m, i) => {
+        html += `<div class="hb-manager-entry">
+            <span class="hb-manager-name" onclick="closeHomebrewManager();selectedMonster=homebrewMonsters[${i}];renderStatBlock(homebrewMonsters[${i}])">${escapeHtml(m.name)} <span style="font-size:0.7rem;color:var(--ink-light);">CR ${m.cr}</span></span>
+            <div class="hb-manager-actions">
+                <button class="hb-manager-edit" onclick="closeHomebrewManager();openHomebrewEditor(homebrewMonsters[${i}],${i})" title="Edit">&#9998;</button>
+                <button class="hb-manager-delete" onclick="deleteHomebrewMonster(${i});renderHomebrewManagerList();updateHomebrewCount()" title="Delete">&times;</button>
+            </div>
+        </div>`;
+    });
+    container.innerHTML = html;
+}
+
 function showToast(message, duration) {
     duration = duration || 2500;
     const toast = document.getElementById('toastNotification');
@@ -3599,6 +3685,8 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         if (document.getElementById('hbModalOverlay').classList.contains('active')) {
             closeHomebrewEditor();
+        } else if (document.getElementById('homebrewModalOverlay').classList.contains('active')) {
+            closeHomebrewManager();
         } else if (document.getElementById('sessionModalOverlay').classList.contains('active')) {
             closeSessionManager();
         } else if (document.getElementById('settingsModalOverlay').classList.contains('active')) {
